@@ -171,20 +171,25 @@ class MinimaxAgent(MultiAgentSearchAgent):
             - Pacman (agent 0) is the maximizing player.
             - Each ghost (agent >= 1) is a minimizing player.
             """
-            # Terminal/depth cutoff: evaluate leaf with configured evaluation function
+            # if the game is over or we've reached the maximum search depth, return the evaluation of the state
             if state.isWin() or state.isLose() or depth == 0:
                 return self.evaluationFunction(state)
 
+            # Get total number of agents (Pacman + ghosts)
             numAgents = state.getNumAgents()
+            # Get the list of moves the current agent is allowed to make.
             legalActions = state.getLegalActions(agentIndex)
 
-            # Cycle agents in order: 0 -> 1 -> ... -> N-1 -> 0
+            # Cycle agents: after the last ghost moves, it's Pacman's turn again
             nextAgent = (agentIndex + 1) % numAgents
-            # Only count down depth after a full ply (all ghosts have moved).
+            # Only decrease depth when it's Pacman's turn again
+            #     one full ply is complete after all agents have moved once
             nextDepth = depth - 1 if nextAgent == 0 else depth
 
+            # The list of resulting states after the current agent takes each legal action
             successors = [state.generateSuccessor(agentIndex, a) for a in legalActions]
 
+            # Minimax Decision Tree, Pacman maximizes, ghosts minimize
             if (
                 agentIndex == 0
             ):  # Pacman turn: choose action with highest backed-up value
