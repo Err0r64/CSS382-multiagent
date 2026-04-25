@@ -184,6 +184,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             nextAgent = (agentIndex + 1) % numAgents
             # Only decrease depth when it's Pacman's turn again
             #     one full ply is complete after all agents have moved once
+            # "ply" being a single turn for all agents
             nextDepth = depth - 1 if nextAgent == 0 else depth
 
             # The list of resulting states after the current agent takes each legal action
