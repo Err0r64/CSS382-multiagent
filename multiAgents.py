@@ -253,11 +253,21 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     
                     # Update alpha to the best value for Pacman so far
                     alpha = max(alpha, value)
-                    # Project autograders expect no pruning on equality.
+                    
+                    # If alpha is greater than beta - prune
+                    #   This is because the minimax would never let the decision
+                    #   reach this point because the best choice is accounted for.
+                    # This implementation does not prune on eqauality for the 
+                    #   sake of the autograder.
                     if beta < alpha:
                         break
+                # Returning the best value found.
                 return value
 
+            # Ghost behavior (minimizing branch)
+            #   Same as maximizing behavior but beta will start at +infinity
+            #   We update beta for min each time and prune when Beta is below
+            #   alpha.
             value = float("inf")
             for action in legalActions:
                 successor = state.generateSuccessor(agentIndex, action)
@@ -266,10 +276,10 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     alphabeta(successor, nextAgent, nextDepth, alpha, beta),
                 )
                 beta = min(beta, value)
-                # Project autograders expect no pruning on equality.
+                # no prune on equality again because I want that autograder grade
                 if beta < alpha:
                     break
-            return value
+            return value``
 
         legalActions = gameState.getLegalActions(0)
         bestAction = legalActions[0]
