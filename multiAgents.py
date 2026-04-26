@@ -218,8 +218,73 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+      
+
+        def alphabeta(state, agentIndex, depth, alpha, beta):
+            # Check if we've reached a terminal state or maximum depth
+            if state.isWin() or state.isLose() or depth == 0:
+                return self.evaluationFunction(state)
+
+            # Get the list of moves the current agent is allowed to make.
+            # If there are no legal actions, return the evaluation of the state
+            legalActions = state.getLegalActions(agentIndex)
+            if not legalActions:
+                return self.evaluationFunction(state)
+
+            # Cycling through agents: after the last ghost moves, it's Pacman's turn again
+            # Depth decrements only when it is Pacman's turn again
+            numAgents = state.getNumAgents()
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = depth - 1 if nextAgent == 0 else depth
+
+            # Pacman's turn: maximize value, alpha starts at -infinity
+            if agentIndex == 0:
+                value = float("-inf")
+                
+                # Loop through legal actions and generate successor states
+                for action in legalActions:
+                    successor = state.generateSuccessor(agentIndex, action)
+                    
+                    # recurse on the successor state to get its minimax value to update alpha and value
+                    value = max(
+                        value,
+                        alphabeta(successor, nextAgent, nextDepth, alpha, beta),
+                    )
+                    
+                    # Update alpha to the best value for Pacman so far
+                    alpha = max(alpha, value)
+                    # Project autograders expect no pruning on equality.
+                    if beta < alpha:
+                        break
+                return value
+
+            value = float("inf")
+            for action in legalActions:
+                successor = state.generateSuccessor(agentIndex, action)
+                value = min(
+                    value,
+                    alphabeta(successor, nextAgent, nextDepth, alpha, beta),
+                )
+                beta = min(beta, value)
+                # Project autograders expect no pruning on equality.
+                if beta < alpha:
+                    break
+            return value
+
+        legalActions = gameState.getLegalActions(0)
+        bestAction = legalActions[0]
+        bestValue = float("-inf")
+        alpha = float("-inf")
+        beta = float("inf")
+
+        for action in legalActions:
+            value = alphabeta(gameState.generateSuccessor(0, action), 1, self.depth, alpha, beta)
+            if value > bestValue:
+                bestValue = value
+                bestAction = action
+            alpha = max(alpha, bestValue)
+
+        return bestAction
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
