@@ -279,7 +279,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 # no prune on equality again because I want that autograder grade
                 if beta < alpha:
                     break
-            return value``
+            return value
 
         legalActions = gameState.getLegalActions(0)
         bestAction = legalActions[0]
