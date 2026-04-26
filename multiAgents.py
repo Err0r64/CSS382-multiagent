@@ -281,19 +281,29 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     break
             return value
 
+        # Set up: default to the first lgal action, initializing tracking value
+        #   to -infinity, and start alpha and beta at their bounds
         legalActions = gameState.getLegalActions(0)
         bestAction = legalActions[0]
         bestValue = float("-inf")
         alpha = float("-inf")
         beta = float("inf")
 
+        # For each pacman action, generate the sucessor and get
+        #   The alpha-beta value starting with the first ghost + full depth
+        #   This loop threads alpha through siblings, meaning alpha represents
+        #   the best score for each action possible and that is carried while we
+        #   explore the other actions.
         for action in legalActions:
             value = alphabeta(gameState.generateSuccessor(0, action), 1, self.depth, alpha, beta)
+            # If this action is better than what we had, store. Then raise
+            #   aloha so the next sibling's recursion can prune if needed.
             if value > bestValue:
                 bestValue = value
                 bestAction = action
             alpha = max(alpha, bestValue)
 
+        # returns the best action found.
         return bestAction
 
 
