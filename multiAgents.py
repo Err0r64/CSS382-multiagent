@@ -218,7 +218,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-      
 
         def alphabeta(state, agentIndex, depth, alpha, beta):
             # Check if we've reached a terminal state or maximum depth
@@ -240,24 +239,24 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             # Pacman's turn: maximize value, alpha starts at -infinity
             if agentIndex == 0:
                 value = float("-inf")
-                
+
                 # Loop through legal actions and generate successor states
                 for action in legalActions:
                     successor = state.generateSuccessor(agentIndex, action)
-                    
+
                     # recurse on the successor state to get its minimax value to update alpha and value
                     value = max(
                         value,
                         alphabeta(successor, nextAgent, nextDepth, alpha, beta),
                     )
-                    
+
                     # Update alpha to the best value for Pacman so far
                     alpha = max(alpha, value)
-                    
+
                     # If alpha is greater than beta - prune
                     #   This is because the minimax would never let the decision
                     #   reach this point because the best choice is accounted for.
-                    # This implementation does not prune on eqauality for the 
+                    # This implementation does not prune on eqauality for the
                     #   sake of the autograder.
                     if beta < alpha:
                         break
@@ -295,7 +294,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         #   the best score for each action possible and that is carried while we
         #   explore the other actions.
         for action in legalActions:
-            value = alphabeta(gameState.generateSuccessor(0, action), 1, self.depth, alpha, beta)
+            value = alphabeta(
+                gameState.generateSuccessor(0, action), 1, self.depth, alpha, beta
+            )
             # If this action is better than what we had, store. Then raise
             #   aloha so the next sibling's recursion can prune if needed.
             if value > bestValue:
@@ -307,6 +308,10 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         return bestAction
 
 
+# Difference compared to alpha-beta:
+#  No pruning, because there is no alpha beta in general.
+#  Assumption that adversaries (ghosts) are random, so we take the average
+#  value of all children
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
     Your expectimax agent (question 4)
@@ -325,14 +330,18 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             if state.isWin() or state.isLose() or depth == 0:
                 return self.evaluationFunction(state)
 
+            # get this agent's moves: if there are none, return the evaluation of the state
             legalActions = state.getLegalActions(agentIndex)
             if not legalActions:
                 return self.evaluationFunction(state)
 
+            # Cycle through agents
             numAgents = state.getNumAgents()
             nextAgent = (agentIndex + 1) % numAgents
             nextDepth = depth - 1 if nextAgent == 0 else depth
 
+            # Recursively get the expectimax value of each successor state after
+            #   taking each legal action
             values = [
                 expectimax(
                     state.generateSuccessor(agentIndex, action),
@@ -342,11 +351,16 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 for action in legalActions
             ]
 
+            # Pacman maximizes, return best value
             if agentIndex == 0:
                 return max(values)
 
+            # Ghosts: return average of children's values.
+            #     Assuming ghost is random, each action has a 1/len(val) chance
             return sum(values) / float(len(values))
 
+        # Return the action with the highest expectimax value, starting with the
+        #   first ghost and full depth.
         legalActions = gameState.getLegalActions(0)
         return max(
             legalActions,
@@ -358,6 +372,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         )
 
 
+
 def betterEvaluationFunction(currentGameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
@@ -367,49 +382,61 @@ def betterEvaluationFunction(currentGameState):
     Pacman to finish remaining food, move toward useful pellets/capsules, avoid
     active ghosts, and chase scared ghosts when they are close enough to catch.
     """
+    
+    # Prefer path to winning, avoid path to losing.
     if currentGameState.isWin():
         return float("inf")
     if currentGameState.isLose():
         return float("-inf")
 
+    # State info
     pacmanPos = currentGameState.getPacmanPosition()
     foodList = currentGameState.getFood().asList()
     capsules = currentGameState.getCapsules()
     ghostStates = currentGameState.getGhostStates()
 
+    # Base score from the game state, which accounts for food eaten, time penalties, etc.
     score = currentGameState.getScore()
 
-    # Fewer remaining objectives is strongly better, especially late game.
+    # Fewer remaining objectives is better, especially late game.
     score -= 8.0 * len(foodList)
     score -= 20.0 * len(capsules)
 
+    # Using reciprocal distance to nearest food.
+    # + 1 to avoid div by zero when on food
     if foodList:
         foodDistances = [manhattanDistance(pacmanPos, food) for food in foodList]
         closestFood = min(foodDistances)
         score += 12.0 / (closestFood + 1)
 
-        # Prefer states where the remaining board can be cleaned up quickly.
+        # penalty for fodo that's far away
+        # Encourage pacman to finish food before going for further clusters.
         farthestFood = max(foodDistances)
         score -= 1.5 * farthestFood
 
+    # Higher (better) score for being closer to powerup, because ghosts 
+    #   Can be consumed then and safety timer.
     if capsules:
-        closestCapsule = min(manhattanDistance(pacmanPos, capsule) for capsule in capsules)
-        score += 18.0 / (closestCapsule + 1)
+        closestCapsule = min(
+            manhattanDistance(pacmanPos, capsule) for capsule in capsules
+        )
+        score += 10.0 / (closestCapsule + 1)
 
+    # Ghosts: if scared, chase when close enough; if active, stay away.
     for ghostState in ghostStates:
         ghostPos = ghostState.getPosition()
         distance = manhattanDistance(pacmanPos, ghostPos)
 
         if ghostState.scaredTimer > 0:
             if distance <= ghostState.scaredTimer:
-                score += 40.0 / (distance + 1)
+                score += 5.0 / (distance + 1)
             else:
                 score += 4.0 / (distance + 1)
         else:
             if distance <= 1:
                 score -= 1000.0
             elif distance == 2:
-                score -= 120.0
+                score -= -4.0
             else:
                 score -= 8.0 / distance
 
