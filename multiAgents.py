@@ -319,8 +319,43 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        def expectimax(state, agentIndex, depth):
+            # Terminal states and depth cutoff use the evaluation function.
+            if state.isWin() or state.isLose() or depth == 0:
+                return self.evaluationFunction(state)
+
+            legalActions = state.getLegalActions(agentIndex)
+            if not legalActions:
+                return self.evaluationFunction(state)
+
+            numAgents = state.getNumAgents()
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = depth - 1 if nextAgent == 0 else depth
+
+            values = [
+                expectimax(
+                    state.generateSuccessor(agentIndex, action),
+                    nextAgent,
+                    nextDepth,
+                )
+                for action in legalActions
+            ]
+
+            if agentIndex == 0:
+                return max(values)
+
+            return sum(values) / float(len(values))
+
+        legalActions = gameState.getLegalActions(0)
+        return max(
+            legalActions,
+            key=lambda action: expectimax(
+                gameState.generateSuccessor(0, action),
+                1,
+                self.depth,
+            ),
+        )
 
 
 def betterEvaluationFunction(currentGameState):
@@ -328,10 +363,57 @@ def betterEvaluationFunction(currentGameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: Combines the true game score with state features that encourage
+    Pacman to finish remaining food, move toward useful pellets/capsules, avoid
+    active ghosts, and chase scared ghosts when they are close enough to catch.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    if currentGameState.isWin():
+        return float("inf")
+    if currentGameState.isLose():
+        return float("-inf")
+
+    pacmanPos = currentGameState.getPacmanPosition()
+    foodList = currentGameState.getFood().asList()
+    capsules = currentGameState.getCapsules()
+    ghostStates = currentGameState.getGhostStates()
+
+    score = currentGameState.getScore()
+
+    # Fewer remaining objectives is strongly better, especially late game.
+    score -= 8.0 * len(foodList)
+    score -= 20.0 * len(capsules)
+
+    if foodList:
+        foodDistances = [manhattanDistance(pacmanPos, food) for food in foodList]
+        closestFood = min(foodDistances)
+        score += 12.0 / (closestFood + 1)
+
+        # Prefer states where the remaining board can be cleaned up quickly.
+        farthestFood = max(foodDistances)
+        score -= 1.5 * farthestFood
+
+    if capsules:
+        closestCapsule = min(manhattanDistance(pacmanPos, capsule) for capsule in capsules)
+        score += 18.0 / (closestCapsule + 1)
+
+    for ghostState in ghostStates:
+        ghostPos = ghostState.getPosition()
+        distance = manhattanDistance(pacmanPos, ghostPos)
+
+        if ghostState.scaredTimer > 0:
+            if distance <= ghostState.scaredTimer:
+                score += 40.0 / (distance + 1)
+            else:
+                score += 4.0 / (distance + 1)
+        else:
+            if distance <= 1:
+                score -= 1000.0
+            elif distance == 2:
+                score -= 120.0
+            else:
+                score -= 8.0 / distance
+
+    return score
 
 
 # Abbreviation
