@@ -385,9 +385,9 @@ def betterEvaluationFunction(currentGameState):
     
     # Prefer path to winning, avoid path to losing.
     if currentGameState.isWin():
-        return float("inf")
+        return 1000000.0 + currentGameState.getScore()
     if currentGameState.isLose():
-        return float("-inf")
+        return -1000000.0 + currentGameState.getScore()
 
     # State info
     pacmanPos = currentGameState.getPacmanPosition()
@@ -436,7 +436,7 @@ def betterEvaluationFunction(currentGameState):
             if distance <= 1:
                 score -= 1000.0
             elif distance == 2:
-                score -= -4.0
+                score -= 40.0
             else:
                 score -= 8.0 / distance
 
