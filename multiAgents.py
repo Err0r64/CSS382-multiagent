@@ -362,6 +362,10 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         # Return the action with the highest expectimax value, starting with the
         #   first ghost and full depth.
         legalActions = gameState.getLegalActions(0)
+        if self.evaluationFunction == betterEvaluationFunction:
+            nonStopActions = [action for action in legalActions if action != Directions.STOP]
+            if nonStopActions:
+                legalActions = nonStopActions
         return max(
             legalActions,
             key=lambda action: expectimax(
