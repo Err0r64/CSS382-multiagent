@@ -363,9 +363,13 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         #   first ghost and full depth.
         legalActions = gameState.getLegalActions(0)
         if self.evaluationFunction == betterEvaluationFunction:
+            # Revoked pacman's stop ability because it was stalling.
+            # this is a temp solution, but I need to submit
             nonStopActions = [action for action in legalActions if action != Directions.STOP]
             if nonStopActions:
                 legalActions = nonStopActions
+        # return the action with the highest expectimax value,
+        #  starting with the first ghost and full depth.
         return max(
             legalActions,
             key=lambda action: expectimax(
@@ -432,6 +436,8 @@ def betterEvaluationFunction(currentGameState):
         score += 30.0 / (closestCapsule + 1)
 
     # Ghosts: if scared, chase when close enough; if active, stay away.
+    # changing the values below will change pacman behavior when ghosts are scared
+    #   vs when they are not scared.
     for ghostState in ghostStates:
         ghostPos = ghostState.getPosition()
         distance = manhattanDistance(pacmanPos, ghostPos)
