@@ -384,6 +384,9 @@ def betterEvaluationFunction(currentGameState):
     """
     
     # Prefer path to winning, avoid path to losing.
+    # DO NOT USE INF, found out if you use inf all winning states would be considered equal
+    #  this causes pacman to be indecisive when faced with a winning action
+    #  because all other states would lead to the same action so he can't decide
     if currentGameState.isWin():
         return 1000000.0 + currentGameState.getScore()
     if currentGameState.isLose():
@@ -399,7 +402,7 @@ def betterEvaluationFunction(currentGameState):
     score = currentGameState.getScore()
 
     # Fewer remaining objectives is better, especially late game.
-    score -= 8.0 * len(foodList)
+    score -= 10.0 * len(foodList)
     score -= 20.0 * len(capsules)
 
     # Using reciprocal distance to nearest food.
@@ -407,7 +410,9 @@ def betterEvaluationFunction(currentGameState):
     if foodList:
         foodDistances = [manhattanDistance(pacmanPos, food) for food in foodList]
         closestFood = min(foodDistances)
-        score += 12.0 / (closestFood + 1)
+        score += 25.0 / (closestFood + 1)
+        score -= 1.5 * closestFood
+        score -= 0.5 * sum(sorted(foodDistances)[:3])
 
         # penalty for fodo that's far away
         # Encourage pacman to finish food before going for further clusters.
@@ -420,7 +425,7 @@ def betterEvaluationFunction(currentGameState):
         closestCapsule = min(
             manhattanDistance(pacmanPos, capsule) for capsule in capsules
         )
-        score += 10.0 / (closestCapsule + 1)
+        score += 30.0 / (closestCapsule + 1)
 
     # Ghosts: if scared, chase when close enough; if active, stay away.
     for ghostState in ghostStates:
@@ -429,9 +434,10 @@ def betterEvaluationFunction(currentGameState):
 
         if ghostState.scaredTimer > 0:
             if distance <= ghostState.scaredTimer:
-                score += 5.0 / (distance + 1)
+                score += 200.0 / (distance + 1)
+                score += 2.0 * (ghostState.scaredTimer - distance)
             else:
-                score += 4.0 / (distance + 1)
+                score += 10.0 / (distance + 1)
         else:
             if distance <= 1:
                 score -= 1000.0
